@@ -498,7 +498,7 @@ export const useCal = create<CalState>()(
       },
     }),
     {
-      name: "fantastical-clone",
+      name: "fantastical-clone-v2",
       partialize: (s) => ({
         calendars: s.calendars,
         sets: s.sets,
@@ -526,6 +526,17 @@ export function useVisibleEvents() {
     () => useCal.getState().visibleEvents(),
     [events, calendars, sets, activeSetId, view, selectedDate, weekStartsOn],
   );
+}
+
+export function useSelectedDate() {
+  const iso = useCal((s) => s.selectedDate);
+  return useMemo(() => new Date(iso), [iso]);
+}
+
+export function useContextHint() {
+  const iso = useCal((s) => s.selectedDate);
+  const calendars = useCal((s) => s.calendars);
+  return useMemo(() => useCal.getState().contextHint(new Date(iso)), [iso, calendars]);
 }
 
 function applySmartParseBoost(sentence: string, result: ParseResult, state: CalState): ParseResult {

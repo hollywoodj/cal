@@ -39,7 +39,12 @@ export function ParserBar() {
     ) ?? calendars.find((c) => c.id === useCal.getState().defaultCalendarId());
 
   const warn =
-    parsed && parsed.start && parsed.end && !parsed.isTask
+    parsed &&
+    parsed.start &&
+    parsed.end &&
+    !parsed.isTask &&
+    !(parsed.calendarQuery || "").toLowerCase().includes("ufc") &&
+    !/ufc|fight night|watch the fight/i.test(text)
       ? overlapWarning(parsed.start, parsed.end)
       : null;
 

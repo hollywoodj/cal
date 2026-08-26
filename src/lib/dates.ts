@@ -90,15 +90,14 @@ export function formatHourLabel(hour: number) {
 }
 
 export function eventOverlapsDay(event: CalEvent, day: Date) {
-  const start = startOfDay(fromISO(event.start));
-  let end = fromISO(event.end);
+  const dayStart = startOfDay(day);
+  const dayEnd = endOfDay(day);
   if (event.allDay) {
-    end = endOfDay(addDays(startOfDay(end), 0));
-    if (end.getTime() <= start.getTime()) end = endOfDay(start);
+    const start = startOfDay(fromISO(event.start));
+    const end = startOfDay(fromISO(event.end));
+    return dayStart.getTime() >= start.getTime() && dayStart.getTime() <= end.getTime();
   }
-  const dayStart = startOfDay(day).getTime();
-  const dayEnd = endOfDay(day).getTime();
-  return fromISO(event.start).getTime() <= dayEnd && end.getTime() >= dayStart;
+  return fromISO(event.start).getTime() <= dayEnd.getTime() && fromISO(event.end).getTime() >= dayStart.getTime();
 }
 
 export function isAllDayOn(event: CalEvent, day: Date) {

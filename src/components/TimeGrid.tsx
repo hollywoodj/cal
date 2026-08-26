@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { format, isSameDay, isWeekend } from "date-fns";
 import type { CalEvent } from "../types";
 import { contrastText } from "../lib/colors";
-import { formatHourLabel, fromISO, hoursOfDay, minutesFromMidnight } from "../lib/dates";
+import { formatHourLabel, fromISO, hoursOfDay, minutesFromMidnight, eventOverlapsDay } from "../lib/dates";
 import { layoutDayEvents } from "../lib/layout";
 import { useCal, useVisibleEvents } from "../state/store";
 
@@ -19,6 +19,7 @@ export function TimeGrid({ days, hourHeight }: Props) {
   const openParser = useCal((s) => s.openParser);
   const setSelectedDate = useCal((s) => s.setSelectedDate);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ day: Date; startMin: number; endMin: number } | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [drag, setDrag] = useState<{ day: Date; startMin: number; endMin: number } | null>(null);
 
@@ -37,15 +38,7 @@ export function TimeGrid({ days, hourHeight }: Props) {
   const calColor = (id: string) => calendars.find((c) => c.id === id)?.color ?? "#007AFF";
 
   const allDayByDay = useMemo(() => {
-    return days.map((day) =>
-      events.filter((e) => {
-        if (!e.allDay) return false;
-        const s = fromISO(e.start);
-        const en = fromISO(e.end);
-        return s <= new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59) &&
-          en >= new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0);
-      }),
-    );
+    return days.map((day) => events.filter((e) => e.allDay && eventOverlapsDay(e, day)));
   }, [days, events]);
 
   const timedByDay = useMemo(() => {
@@ -62,34 +55,40 @@ export function TimeGrid({ days, hourHeight }: Props) {
     return Math.max(0, Math.min(24 * 60 - 15, Math.round(raw / 15) * 15));
   }
 
-  function onDown(day: Date, e: React.MouseEvent, colEl: HTMLElement) {
+  function onDown(day: Date, e: React.PointerEvent<HTMLDivElement>) {
     if ((e.target as HTMLElement).closest(".ev")) return;
-    const startMin = minutesFromEvent(e, colEl);
-    setDrag({ day, startMin, endMin: startMin + 60 });
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const startMin = minutesFromEvent(e, e.currentTarget);
+    const next = { day, startMin, endMin: startMin + 60 };
+    dragRef.current = next;
+    setDrag(next);
     setSelectedDate(day);
+  }
 
-    const move = (ev: MouseEvent) => {
-      const mins = minutesFromEvent(ev, colEl);
-      setDrag((d) => (d ? { ...d, endMin: Math.max(d.startMin + 15, mins) } : d));
+  function onMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragRef.current) return;
+    const mins = minutesFromEvent(e, e.currentTarget);
+    const next = {
+      ...dragRef.current,
+      endMin: Math.max(dragRef.current.startMin + 15, mins),
     };
-    const up = () => {
-      document.removeEventListener("mousemove", move);
-      document.removeEventListener("mouseup", up);
-      setDrag((current) => {
-        if (!current) return null;
-        const s = new Date(current.day);
-        s.setHours(0, 0, 0, 0);
-        s.setMinutes(Math.min(current.startMin, current.endMin));
-        const en = new Date(current.day);
-        en.setHours(0, 0, 0, 0);
-        en.setMinutes(Math.max(current.startMin, current.endMin));
-        const label = `${format(s, "h:mmaaa").toLowerCase()}-${format(en, "h:mmaaa").toLowerCase()}`;
-        openParser(`${format(s, "EEEE")} ${label} `);
-        return null;
-      });
-    };
-    document.addEventListener("mousemove", move);
-    document.addEventListener("mouseup", up);
+    dragRef.current = next;
+    setDrag(next);
+  }
+
+  function onUp() {
+    const current = dragRef.current;
+    dragRef.current = null;
+    setDrag(null);
+    if (!current) return;
+    const s = new Date(current.day);
+    s.setHours(0, 0, 0, 0);
+    s.setMinutes(Math.min(current.startMin, current.endMin));
+    const en = new Date(current.day);
+    en.setHours(0, 0, 0, 0);
+    en.setMinutes(Math.max(current.startMin, current.endMin));
+    const label = `${format(s, "h:mmaaa").toLowerCase()}-${format(en, "h:mmaaa").toLowerCase()}`;
+    openParser(`${format(s, "EEEE")} ${label} `);
   }
 
   const cols = days.length;
@@ -146,7 +145,9 @@ export function TimeGrid({ days, hourHeight }: Props) {
               <div
                 key={day.toISOString()}
                 className={`day-col ${isWeekend(day) ? "weekend" : ""} ${isSameDay(day, now) ? "today-col" : ""}`}
-                onMouseDown={(e) => onDown(day, e, e.currentTarget)}
+                onPointerDown={(e) => onDown(day, e)}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
               >
                 {timedByDay[i].map((laid) => {
                   const color = calColor(laid.event.calendarId);

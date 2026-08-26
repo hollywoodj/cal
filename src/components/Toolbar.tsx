@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, PanelLeft, Search, Settings } from "lucide-react";
 import { format } from "date-fns";
-import { useCal } from "../state/store";
+import { useCal, useSelectedDate } from "../state/store";
 import type { ViewId } from "../types";
 
 const VIEWS: { id: ViewId; label: string }[] = [
@@ -15,7 +15,7 @@ const VIEWS: { id: ViewId; label: string }[] = [
 export function Toolbar() {
   const view = useCal((s) => s.view);
   const setView = useCal((s) => s.setView);
-  const date = useCal((s) => s.selectedDateObj());
+  const date = useSelectedDate();
   const goToday = useCal((s) => s.goToday);
   const goOffset = useCal((s) => s.goOffset);
   const toggleSidebar = useCal((s) => s.toggleSidebar);

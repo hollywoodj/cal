@@ -1,10 +1,10 @@
 import { addDays } from "date-fns";
-import { useCal } from "../state/store";
+import { useCal, useSelectedDate } from "../state/store";
 import { startOfViewWeek } from "../lib/dates";
 import { TimeGrid } from "./TimeGrid";
 
 export function WeekView() {
-  const date = useCal((s) => s.selectedDateObj());
+  const date = useSelectedDate();
   const settings = useCal((s) => s.settings);
   const start = startOfViewWeek(date, settings.weekStartsOn);
   const days = Array.from({ length: settings.weekViewDays }, (_, i) => addDays(start, i));
@@ -17,7 +17,7 @@ export function WeekView() {
 }
 
 export function DayView() {
-  const date = useCal((s) => s.selectedDateObj());
+  const date = useSelectedDate();
   const settings = useCal((s) => s.settings);
   return <TimeGrid days={[date]} hourHeight={settings.hourHeight} />;
 }

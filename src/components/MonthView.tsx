@@ -1,11 +1,11 @@
 import { addMonths, format, isSameDay, isSameMonth } from "date-fns";
-import { useCal, useVisibleEvents } from "../state/store";
+import { useCal, useVisibleEvents, useSelectedDate } from "../state/store";
 import { contrastText } from "../lib/colors";
 import { eventsOnDay, formatTime, fromISO, monthGrid, WEEKDAYS } from "../lib/dates";
 import type { CalEvent } from "../types";
 
 export function MonthView() {
-  const date = useCal((s) => s.selectedDateObj());
+  const date = useSelectedDate();
   const settings = useCal((s) => s.settings);
   const events = useVisibleEvents();
   const calendars = useCal((s) => s.calendars);
@@ -69,7 +69,7 @@ function MonthPill({ event, color, onOpen }: { event: CalEvent; color: string; o
 }
 
 export function QuarterView() {
-  const date = useCal((s) => s.selectedDateObj());
+  const date = useSelectedDate();
   const months = [date, addMonths(date, 1), addMonths(date, 2)];
   return (
     <div className="quarter-grid">
@@ -81,7 +81,7 @@ export function QuarterView() {
 }
 
 export function YearView() {
-  const date = useCal((s) => s.selectedDateObj());
+  const date = useSelectedDate();
   const months = Array.from({ length: 12 }, (_, i) => new Date(date.getFullYear(), i, 1));
   return (
     <div className="year-grid">
@@ -105,8 +105,8 @@ function MiniMonth({ month }: { month: Date }) {
     <div className="mini-month">
       <h4>{format(month, "MMMM")}</h4>
       <div className="mini-grid">
-        {dows.map((d) => (
-          <div key={d} className="mini-dow" style={{ color: "var(--main-muted)" }}>
+        {dows.map((d, i) => (
+          <div key={`${d}-${i}`} className="mini-dow" style={{ color: "var(--main-muted)" }}>
             {d}
           </div>
         ))}

@@ -1,7 +1,7 @@
 import { addMonths, format, isSameDay, isSameMonth } from "date-fns";
 import { ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useCal, useVisibleEvents } from "../state/store";
+import { useCal, useVisibleEvents, useSelectedDate, useContextHint } from "../state/store";
 import { eventsOnDay, formatTime, fromISO, labelForDay, monthGrid, WEEKDAYS } from "../lib/dates";
 import type { CalEvent, TaskItem } from "../types";
 
@@ -19,7 +19,7 @@ export function Sidebar() {
 }
 
 function MiniCalendar() {
-  const selected = useCal((s) => s.selectedDateObj());
+  const selected = useSelectedDate();
   const setSelectedDate = useCal((s) => s.setSelectedDate);
   const settings = useCal((s) => s.settings);
   const events = useVisibleEvents();
@@ -49,8 +49,8 @@ function MiniCalendar() {
         </div>
       </div>
       <div className="mini-grid">
-        {dows.map((d) => (
-          <div key={d} className="mini-dow">
+        {dows.map((d, i) => (
+          <div key={`${d}-${i}`} className="mini-dow">
             {d}
           </div>
         ))}
@@ -81,13 +81,13 @@ function MiniCalendar() {
 }
 
 function ContextBanner() {
-  const hint = useCal((s) => s.contextHint());
+  const hint = useContextHint();
   if (!hint) return null;
   return <div className="context-banner">{hint}</div>;
 }
 
 function UpcomingList() {
-  const selected = useCal((s) => s.selectedDateObj());
+  const selected = useSelectedDate();
   const events = useVisibleEvents();
   const tasks = useCal((s) => s.tasks);
   const calendars = useCal((s) => s.calendars);
